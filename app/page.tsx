@@ -61,13 +61,21 @@ export default function Home() {
         email: authEmail,
         password: authPassword,
       })
-      if (error) setAuthError(error.message)
+      if (error) {
+        console.error('Sign up error:', error)
+        setAuthError(error.message)
+      } else {
+        setAuthError('Check your email to confirm sign up!')
+      }
     } else {
       const { error } = await supabase.auth.signInWithPassword({
         email: authEmail,
         password: authPassword,
       })
-      if (error) setAuthError(error.message)
+      if (error) {
+        console.error('Sign in error:', error)
+        setAuthError(error.message)
+      }
     }
   }
 
