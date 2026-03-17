@@ -29,6 +29,7 @@ export default function Home() {
   const [authPassword, setAuthPassword] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const [authError, setAuthError] = useState('')
+  const [authLoading, setAuthLoading] = useState(false)
 
   useEffect(() => {
     checkUser()
@@ -55,27 +56,39 @@ export default function Home() {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     setAuthError('')
+    setAuthLoading(true)
+    console.log('Auth clicked:', isSignUp ? 'Sign Up' : 'Sign In', { email: authEmail })
     
-    if (isSignUp) {
-      const { error } = await supabase.auth.signUp({
-        email: authEmail,
-        password: authPassword,
-      })
-      if (error) {
-        console.error('Sign up error:', error)
-        setAuthError(error.message)
+    try {
+      if (isSignUp) {
+        const { data, error } = await supabase.auth.signUp({
+          email: authEmail,
+          password: authPassword,
+        })
+        console.log('Sign up response:', { data, error })
+        if (error) {
+          setAuthError(error.message)
+        } else {
+          setAuthError('Check your email to confirm sign up!')
+        }
       } else {
-        setAuthError('Check your email to confirm sign up!')
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: authEmail,
+          password: authPassword,
+        })
+        console.log('Sign in response:', { data, error, user: data?.user })
+        if (error) {
+          setAuthError(error.message)
+        } else if (data?.user) {
+          setUser(data.user)
+          fetchLeads(data.user.id)
+        }
       }
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: authEmail,
-        password: authPassword,
-      })
-      if (error) {
-        console.error('Sign in error:', error)
-        setAuthError(error.message)
-      }
+    } catch (err) {
+      console.error('Auth exception:', err)
+      setAuthError('An unexpected error occurred')
+    } finally {
+      setAuthLoading(false)
     }
   }
 
@@ -167,9 +180,10 @@ export default function Home() {
             {authError && <p className="text-red-500 text-sm">{authError}</p>}
             <button
               type="submit"
-              className="w-full py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700"
+              disabled={authLoading}
+              className="w-full py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
-              {isSignUp ? 'Sign Up' : 'Sign In'}
+              {authLoading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
             </button>
           </form>
           <p className="mt-4 text-center text-sm text-gray-600">
